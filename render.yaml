@@ -2,6 +2,7 @@
 services:
   - type: web
     name: shipcheck
+    plan: free
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
