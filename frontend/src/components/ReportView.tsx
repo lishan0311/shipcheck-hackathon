@@ -130,7 +130,7 @@ function CaseSummary({run,subject,sender}: {run:Run;subject:string;sender:string
   return <section className={`case-summary ${tone(status)}`}>
     <span className="case-summary-icon"><Icon name={icon}/></span>
     <div className="case-summary-copy"><span className="case-workflow">Category: {category ? categories[category] : 'Workflow confirmation required'}</span><h3>{displayStatus(run)}</h3><p>{action}</p>{reviewReason&&<span className="review-reason-tag">{reviewReasonLabels[reviewReason]}</span>}<small>{caseId ? `Case ${caseId} / ` : ''}{result.routing_source==='human_review'?'Human decision recorded':'Automated result'} / {date(run.created_at)}</small>{!!result.review_details.length&&<p className="case-note">Required: {result.review_details.join(' ')}</p>}</div>
-    {followUpReady&&<div className="case-summary-actions"><a className="primary" href={gmailUrl} target="_blank" rel="noreferrer"><Icon name="external"/>Send follow-up to {displayName}</a><button type="button" className="secondary" onClick={downloadReport}><Icon name="download"/>Download report</button></div>}
+    {followUpReady&&<div className="case-summary-actions"><a className="primary" href={gmailUrl} target="_blank" rel="noreferrer" title={`Contact ${displayName} in Gmail`}><Icon name="external"/>Contact sender</a><button type="button" className="secondary" onClick={downloadReport}><Icon name="download"/>Download report</button></div>}
   </section>;
 }
 
