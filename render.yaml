@@ -1,0 +1,45 @@
+# Render Blueprint: one Docker web service serves React and FastAPI at one origin.
+services:
+  - type: web
+    name: shipcheck
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: ALLOW_DEMO_MODE
+        value: "false"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: shipping-documents
+      - key: OCR_LANGUAGE
+        value: eng
+      - key: APP_ACCESS_TOKEN
+        generateValue: true
+      - key: MAIL_PROVIDER
+        value: gmail
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: GMAIL_USER_ID
+        sync: false
+      - key: MAIL_POLL_SECONDS
+        value: "10"
+      - key: MAIL_SYNC_LIMIT
+        value: "25"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash-lite
+      - key: GEMINI_TIMEOUT_SECONDS
+        value: "8"
+      - key: GEMINI_MAX_REQUESTS
+        value: "20"
+      - key: GEMINI_MIN_CONFIDENCE
+        value: "0.90"

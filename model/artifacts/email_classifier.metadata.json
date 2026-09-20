@@ -1,0 +1,20 @@
+{
+  "model_version": "tfidf-logreg-v1-6331742bf22b",
+  "training_source": "synthetic_authored_bootstrap",
+  "trained_at_utc": "2026-09-19T18:38:14.729888+00:00",
+  "sklearn_version": "1.6.1",
+  "train_sha256": "6331742bf22b6c5fb523cac46352338afb6c1affedc6f2ac75f4a6bb6ce13e3a",
+  "train_counts": {
+    "BL_COMPARISON": 12,
+    "SI_REQUEST": 12,
+    "INVOICE_QUERY": 12,
+    "GENERAL": 12,
+    "SPAM": 12
+  },
+  "review_thresholds": {
+    "confidence": 0.22,
+    "margin": 0.005,
+    "vocabulary_coverage": 0.1
+  },
+  "limitations": "Synthetic English bootstrap data. Probabilities are uncalibrated; review gates use ambiguity and vocabulary coverage. No claim of official dataset accuracy."
+}

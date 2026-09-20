@@ -1,0 +1,1 @@
+"""Shipping document verification application."""

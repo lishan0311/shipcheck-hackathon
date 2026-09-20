@@ -1,0 +1,17 @@
+.git
+.venv
+.tools
+.env
+.env.*
+frontend/.env*
+frontend/node_modules
+frontend/dist
+**/__pycache__
+**/*.pyc
+model/artifacts
+runtime
+planning
+tests
+supabase
+scripts
+sdoc-hackathon-docker

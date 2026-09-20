@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.tools/
+.env
+.env.*
+!.env.example
+model/artifacts/*.joblib
+runtime/
+sdoc-hackathon-docker/
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+.pytest_cache/
+.env

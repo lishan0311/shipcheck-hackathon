@@ -1,0 +1,478 @@
+{
+  "metadata": {
+    "model_version": "tfidf-logreg-v1-6331742bf22b",
+    "training_source": "synthetic_authored_bootstrap",
+    "trained_at_utc": "2026-09-19T18:38:14.729888+00:00",
+    "sklearn_version": "1.6.1",
+    "train_sha256": "6331742bf22b6c5fb523cac46352338afb6c1affedc6f2ac75f4a6bb6ce13e3a",
+    "train_counts": {
+      "BL_COMPARISON": 12,
+      "SI_REQUEST": 12,
+      "INVOICE_QUERY": 12,
+      "GENERAL": 12,
+      "SPAM": 12
+    },
+    "review_thresholds": {
+      "confidence": 0.22,
+      "margin": 0.005,
+      "vocabulary_coverage": 0.1
+    },
+    "limitations": "Synthetic English bootstrap data. Probabilities are uncalibrated; review gates use ambiguity and vocabulary coverage. No claim of official dataset accuracy."
+  },
+  "evaluation_scope": "Separately authored synthetic validation only, never used in fit. This is not official scoring or real-world accuracy.",
+  "validation_sha256": "aaf0a6c40c74ffda4f4f045c158c687ba2d30a5905a50392501704e949f4942c",
+  "validation_count": 15,
+  "label_order": [
+    "BL_COMPARISON",
+    "SI_REQUEST",
+    "INVOICE_QUERY",
+    "GENERAL",
+    "SPAM"
+  ],
+  "classification": {
+    "BL_COMPARISON": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "SI_REQUEST": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "INVOICE_QUERY": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "GENERAL": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "SPAM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 15.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 15.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      3,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      3
+    ]
+  ],
+  "automatic_routing_count": 15,
+  "classification_review_count": 0,
+  "examples": [
+    {
+      "id": "val_bl_01",
+      "expected_category": "BL_COMPARISON",
+      "predicted_category": "BL_COMPARISON",
+      "confidence": 0.3956716379673034,
+      "margin": 0.12065106205769771,
+      "probabilities": {
+        "BL_COMPARISON": 0.3956716379673034,
+        "SI_REQUEST": 0.2750205759096057,
+        "INVOICE_QUERY": 0.11698473892625605,
+        "GENERAL": 0.11627472039586276,
+        "SPAM": 0.09604832680097203
+      },
+      "vocabulary_coverage": 0.7142857142857143,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_bl_02",
+      "expected_category": "BL_COMPARISON",
+      "predicted_category": "BL_COMPARISON",
+      "confidence": 0.6288214823010588,
+      "margin": 0.4777576601112261,
+      "probabilities": {
+        "BL_COMPARISON": 0.6288214823010588,
+        "SI_REQUEST": 0.15106382218983275,
+        "GENERAL": 0.0860633855465803,
+        "INVOICE_QUERY": 0.06885056831782803,
+        "SPAM": 0.06520074164470008
+      },
+      "vocabulary_coverage": 0.8421052631578947,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_bl_03",
+      "expected_category": "BL_COMPARISON",
+      "predicted_category": "BL_COMPARISON",
+      "confidence": 0.39388458031068113,
+      "margin": 0.15697240127834097,
+      "probabilities": {
+        "BL_COMPARISON": 0.39388458031068113,
+        "SI_REQUEST": 0.23691217903234016,
+        "SPAM": 0.1348228837916241,
+        "GENERAL": 0.12357285537639363,
+        "INVOICE_QUERY": 0.11080750148896107
+      },
+      "vocabulary_coverage": 0.8333333333333334,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_si_01",
+      "expected_category": "SI_REQUEST",
+      "predicted_category": "SI_REQUEST",
+      "confidence": 0.5328263363889655,
+      "margin": 0.38670155297875397,
+      "probabilities": {
+        "SI_REQUEST": 0.5328263363889655,
+        "BL_COMPARISON": 0.1461247834102115,
+        "GENERAL": 0.1371454537336458,
+        "INVOICE_QUERY": 0.1117500430699185,
+        "SPAM": 0.07215338339725877
+      },
+      "vocabulary_coverage": 0.8,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_si_02",
+      "expected_category": "SI_REQUEST",
+      "predicted_category": "SI_REQUEST",
+      "confidence": 0.6492696512261777,
+      "margin": 0.5296059919327806,
+      "probabilities": {
+        "SI_REQUEST": 0.6492696512261777,
+        "BL_COMPARISON": 0.1196636592933972,
+        "INVOICE_QUERY": 0.08799436721481681,
+        "SPAM": 0.07245073865627685,
+        "GENERAL": 0.07062158360933155
+      },
+      "vocabulary_coverage": 0.9565217391304348,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_si_03",
+      "expected_category": "SI_REQUEST",
+      "predicted_category": "SI_REQUEST",
+      "confidence": 0.5344043701773533,
+      "margin": 0.4066163189085815,
+      "probabilities": {
+        "SI_REQUEST": 0.5344043701773533,
+        "GENERAL": 0.12778805126877177,
+        "INVOICE_QUERY": 0.11987324998545813,
+        "BL_COMPARISON": 0.10931196753798572,
+        "SPAM": 0.1086223610304311
+      },
+      "vocabulary_coverage": 0.875,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_invoice_01",
+      "expected_category": "INVOICE_QUERY",
+      "predicted_category": "INVOICE_QUERY",
+      "confidence": 0.46741306226442464,
+      "margin": 0.3179357902993829,
+      "probabilities": {
+        "INVOICE_QUERY": 0.46741306226442464,
+        "GENERAL": 0.14947727196504174,
+        "SPAM": 0.1383855435704741,
+        "BL_COMPARISON": 0.12370500932348132,
+        "SI_REQUEST": 0.12101911287657813
+      },
+      "vocabulary_coverage": 0.5333333333333333,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_invoice_02",
+      "expected_category": "INVOICE_QUERY",
+      "predicted_category": "INVOICE_QUERY",
+      "confidence": 0.5715288574411042,
+      "margin": 0.45110765230638394,
+      "probabilities": {
+        "INVOICE_QUERY": 0.5715288574411042,
+        "BL_COMPARISON": 0.1204212051347202,
+        "SPAM": 0.10855810523184058,
+        "GENERAL": 0.10812193914682622,
+        "SI_REQUEST": 0.09136989304550897
+      },
+      "vocabulary_coverage": 0.8888888888888888,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_invoice_03",
+      "expected_category": "INVOICE_QUERY",
+      "predicted_category": "INVOICE_QUERY",
+      "confidence": 0.40310303486226684,
+      "margin": 0.23457254451010073,
+      "probabilities": {
+        "INVOICE_QUERY": 0.40310303486226684,
+        "GENERAL": 0.1685304903521661,
+        "SPAM": 0.16531752594092286,
+        "BL_COMPARISON": 0.13217477037314385,
+        "SI_REQUEST": 0.13087417847150032
+      },
+      "vocabulary_coverage": 0.5882352941176471,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_general_01",
+      "expected_category": "GENERAL",
+      "predicted_category": "GENERAL",
+      "confidence": 0.40986593115336883,
+      "margin": 0.20911136086989274,
+      "probabilities": {
+        "GENERAL": 0.40986593115336883,
+        "SPAM": 0.2007545702834761,
+        "INVOICE_QUERY": 0.17543945428691085,
+        "SI_REQUEST": 0.1208463997882178,
+        "BL_COMPARISON": 0.09309364448802647
+      },
+      "vocabulary_coverage": 0.6666666666666666,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_general_02",
+      "expected_category": "GENERAL",
+      "predicted_category": "GENERAL",
+      "confidence": 0.5895016735823555,
+      "margin": 0.44959689843762873,
+      "probabilities": {
+        "GENERAL": 0.5895016735823555,
+        "INVOICE_QUERY": 0.1399047751447268,
+        "SPAM": 0.1181060904107978,
+        "SI_REQUEST": 0.07713398560289238,
+        "BL_COMPARISON": 0.07535347525922743
+      },
+      "vocabulary_coverage": 0.625,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_general_03",
+      "expected_category": "GENERAL",
+      "predicted_category": "GENERAL",
+      "confidence": 0.46451429910310527,
+      "margin": 0.31678845810282574,
+      "probabilities": {
+        "GENERAL": 0.46451429910310527,
+        "INVOICE_QUERY": 0.1477258410002795,
+        "SI_REQUEST": 0.13944461473250463,
+        "SPAM": 0.1296473732285479,
+        "BL_COMPARISON": 0.11866787193556265
+      },
+      "vocabulary_coverage": 0.7647058823529411,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_spam_01",
+      "expected_category": "SPAM",
+      "predicted_category": "SPAM",
+      "confidence": 0.3700625268361235,
+      "margin": 0.16236256397569201,
+      "probabilities": {
+        "SPAM": 0.3700625268361235,
+        "BL_COMPARISON": 0.2076999628604315,
+        "GENERAL": 0.14551039734395338,
+        "SI_REQUEST": 0.14488782802256758,
+        "INVOICE_QUERY": 0.131839284936924
+      },
+      "vocabulary_coverage": 0.5789473684210527,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_spam_02",
+      "expected_category": "SPAM",
+      "predicted_category": "SPAM",
+      "confidence": 0.5637541016486314,
+      "margin": 0.4353668217839812,
+      "probabilities": {
+        "SPAM": 0.5637541016486314,
+        "GENERAL": 0.1283872798646502,
+        "SI_REQUEST": 0.10878614617747064,
+        "INVOICE_QUERY": 0.1050909824781057,
+        "BL_COMPARISON": 0.09398148983114209
+      },
+      "vocabulary_coverage": 0.75,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    },
+    {
+      "id": "val_spam_03",
+      "expected_category": "SPAM",
+      "predicted_category": "SPAM",
+      "confidence": 0.5198287322246088,
+      "margin": 0.35302497522091253,
+      "probabilities": {
+        "SPAM": 0.5198287322246088,
+        "GENERAL": 0.16680375700369626,
+        "BL_COMPARISON": 0.11775327076097464,
+        "INVOICE_QUERY": 0.10503293178253174,
+        "SI_REQUEST": 0.09058130822818859
+      },
+      "vocabulary_coverage": 0.65,
+      "needs_review": false,
+      "review_details": [],
+      "model_version": "tfidf-logreg-v1-6331742bf22b",
+      "training_source": "synthetic_authored_bootstrap",
+      "review_thresholds": {
+        "confidence": 0.22,
+        "margin": 0.005,
+        "vocabulary_coverage": 0.1
+      }
+    }
+  ]
+}
