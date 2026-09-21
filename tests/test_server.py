@@ -84,7 +84,11 @@ def test_analytics_returns_operational_aggregates(environment):
     assert payload['total_emails'] == 1
     assert payload['outcomes']['NEEDS_REVIEW'] == 1
     assert payload['review_reasons']['missing_attachment'] == 1
-    assert 'supplied_dataset' in payload['validation']
+    supplied = payload['validation']['supplied_dataset']
+    assert supplied['available'] is True
+    assert supplied['pipeline_macro_f1'] == 1.0
+    assert supplied['field_f1'] == 1.0
+    assert supplied['review_precision'] == 1.0
 
 
 def test_failed_processing_can_retry(environment):

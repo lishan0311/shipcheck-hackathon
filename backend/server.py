@@ -508,23 +508,34 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
             workflows[report.get('routing_status') or 'PROCESSING'] += 1
 
         def validation_file(name):
-            path = ROOT / 'runtime' / name
+            # Published evaluation artifacts are immutable results produced by the
+            # organizer-compatible scorer. `runtime/` remains a local override for
+            # re-running an evaluation; Render reads the versioned artifact instead.
+            paths = (ROOT / 'runtime' / name, ROOT / 'model' / 'artifacts' / name)
             try:
+                path = next(candidate for candidate in paths if candidate.is_file())
                 data = json.loads(path.read_text(encoding='utf-8'))
                 classification = data.get('classification', {})
+                model_only = classification.get('model_only', {})
+                pipeline = classification.get('rules_plus_model', {})
                 score = data.get('organizer_score', {})
+                reliability = score.get('reliability', {})
                 return {
                     'available': True,
-                    'model_accuracy': classification.get('model_only', {}).get('accuracy'),
-                    'pipeline_accuracy': classification.get('rules_plus_model', {}).get('accuracy'),
+                    'model_accuracy': model_only.get('accuracy'),
+                    'model_macro_f1': model_only.get('macro_f1'),
+                    'pipeline_accuracy': pipeline.get('accuracy'),
+                    'pipeline_macro_f1': pipeline.get('macro_f1'),
                     'field_f1': score.get('stage3', {}).get('field_f1'),
                     'end_to_end': score.get('end_to_end', {}).get('rate'),
-                    'review_precision': score.get('reliability', {}).get('escalation_precision'),
-                    'review_recall': score.get('reliability', {}).get('escalation_recall'),
+                    'review_precision': reliability.get('escalation_precision'),
+                    'review_recall': reliability.get('escalation_recall'),
+                    'review_f1': reliability.get('escalation_f1'),
                     'final_score': score.get('final_score'),
                     'email_count': score.get('n_emails'),
+                    'source': 'Organizer-compatible scorer',
                 }
-            except (OSError, UnicodeError, json.JSONDecodeError):
+            except (StopIteration, OSError, UnicodeError, json.JSONDecodeError):
                 return {'available': False}
 
         return {
