@@ -105,11 +105,10 @@ def test_category_review_preserves_original_and_rejects_stale_update(environment
     assert client.post('/api/emails/demo/review',json=payload).status_code == 409
 
 
-def test_optional_access_token_and_origin(environment):
+def test_workspace_opens_without_access_token_and_keeps_origin_restricted(environment):
     _, repo, classifier, root = environment
     with TestClient(create_app(Settings(dataset=root,demo=True,access_token='demo-secret'),repo,classifier)) as client:
-        assert client.get('/api/emails').status_code==401
-        assert client.get('/api/emails',headers={'Authorization':'Bearer demo-secret'}).status_code==200
+        assert client.get('/api/emails').status_code==200
         response=client.options('/api/emails',headers={'Origin':'https://foreign.example','Access-Control-Request-Method':'GET'})
         assert 'access-control-allow-origin' not in response.headers
 

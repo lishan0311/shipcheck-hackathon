@@ -59,7 +59,7 @@ Create a Blueprint from your GitHub repository using `render.yaml`.
 
 This blueprint uses **one Docker web service for both frontend and backend**. React is built with Vite during the image build; FastAPI serves the resulting assets and handles `/api`. This keeps the frontend and backend on one origin and still hosts both on Render. No second frontend framework or host is involved.
 
-Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Render. `APP_ACCESS_TOKEN` is generated for the demo workspace: retrieve it from the Render dashboard and enter it into the website when prompted. This is a shared demo gate, not individual user authentication. Reviewer names are self-reported. Do not describe them as verified identities.
+Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Render. The hackathon workspace opens directly, without a browser access token. Reviewer names are self-reported. Do not describe them as verified identities.
 
 `ALLOW_DEMO_MODE=false` makes missing Supabase configuration fail startup. Tesseract and its English language data are installed by the Dockerfile. The Render-provided `PORT` is respected. `/api/health` is a liveness/configuration check; validate actual persistence with a processing request after deployment.
 

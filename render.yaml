@@ -18,8 +18,6 @@ services:
         value: shipping-documents
       - key: OCR_LANGUAGE
         value: eng
-      - key: APP_ACCESS_TOKEN
-        generateValue: true
       - key: AUTO_PROCESS_INBOX
         value: "false"
       - key: MAIL_PROVIDER

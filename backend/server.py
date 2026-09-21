@@ -2,7 +2,6 @@
 import base64
 import binascii
 import copy
-import hmac
 import json
 import logging
 import mimetypes
@@ -456,10 +455,6 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
         return JSONResponse(status_code=409, content={'detail': str(exc)})
 
     def authorize(request: Request):
-        if settings.access_token:
-            received = request.headers.get('Authorization', '')
-            if not hmac.compare_digest(received, 'Bearer ' + settings.access_token):
-                raise HTTPException(401, 'Enter the workspace access token.')
         if repo is None:
             raise HTTPException(503, 'Supabase is not configured.')
 
@@ -470,7 +465,7 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
             'storage_mode': repo.mode if repo else 'not_configured',
             'persistent': repo is not None and repo.mode == 'supabase',
             'model_available': model is not None or DEFAULT_MODEL.is_file(),
-            'requires_access_token': bool(settings.access_token),
+            'requires_access_token': False,
             'mailbox_provider': mailbox_state['provider'],
             'mailbox_configured': mailbox_state['configured'],
             'ai_assistant': ai_assistant.status(),

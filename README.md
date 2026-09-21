@@ -134,7 +134,7 @@ Clear recurring workflow phrases resolve the supplied SI and draft-BL templates;
 
 When Gmail is configured, the backend polls the authorized Inbox, imports new messages and supported TXT/PDF/DOCX/XLSX attachments, places the newest email at the top and processes it immediately. It also reads the Sent mailbox for messages containing the generated `[SC-email_id]` reference. A detected sent follow-up moves the case to **Waiting for response**; an Inbox reply with the same reference is attached to the original case and moves it to **Response received**. The **Sync Gmail** action performs the same synchronization on demand. Stable IDs prevent the same message from being imported twice.
 
-Reviewer names are self-reported. The optional workspace access token is a shared demo gate, not individual authentication. It is stored only for the browser session.
+Reviewer names are self-reported. The deployed workspace opens directly for the hackathon demonstration.
 
 The application initially reads the participant inbox from the bundled dataset. Processing synchronizes the email and its original attachments to Supabase. New Gmail messages use the same processing and persistence path.
 
