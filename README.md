@@ -44,6 +44,12 @@ The current supplied dataset contains **520 emails**. The reproducible saved eva
 
 ### 2. Problem and solution
 
+#### End-to-end case lifecycle
+
+[![ShipCheck case lifecycle from classification to tracked response](docs/images/shipcheck-case-lifecycle.png)](docs/images/shipcheck-case-lifecycle.png)
+
+*Figure 1. Email classification, comparison outcomes, human decisions, tracked Gmail follow-up, and revised-document reprocessing. Select the image to open the full-resolution diagram.*
+
 Shipping operations teams receive mixed email intents in one inbox. Only some messages request an SI–draft BL comparison, yet every comparison can contain formatting variation, missing files, scanned pages, incomplete fields, or real commercial discrepancies. A simple string comparison creates false alarms; an unconstrained language model can hide uncertainty or invent a value.
 
 ShipCheck addresses each part of that problem explicitly:
@@ -59,9 +65,13 @@ ShipCheck addresses each part of that problem explicitly:
 | Revised documents arrive later | Gmail thread data and the generated `[SC-email_id]` marker link the response to the original case; newest attachments are displayed and reprocessed. |
 | Cloud restarts must not erase evidence | Supabase PostgreSQL stores emails, reports and review history; private Supabase Storage stores original attachment bytes. |
 
-![ShipCheck case lifecycle from classification to tracked response](docs/images/shipcheck-case-lifecycle.png)
-
 ### 3. Key features and demonstration
+
+#### AI, rules and human decision flow
+
+![How ShipCheck combines AI, deterministic rules and human review](docs/images/shipcheck-decision-flow.png)
+
+*Figure 2. The trained classifier routes intent, deterministic rules decide equality, optional Gemini assists bounded cases, and operators resolve uncertainty.*
 
 #### 3.1 Workflow intent routing
 
@@ -125,12 +135,17 @@ The four reliability labels used for human review are:
 | `unreadable` | A file or OCR result cannot be trusted with enough confidence. |
 | `missing_value` | A required field is blank, a placeholder, repeated, ambiguous, or absent. |
 
-The review form presents decisions that match the evidence:
+The review form displays only decisions that apply to the current outcome:
 
-- **Confirm discrepancy** — create a follow-up case because the draft BL must be corrected or confirmed.
-- **Request clarification** — create a follow-up case because information or readable evidence is missing.
-- **Correct extraction** — enter the source value and recompute the comparison without changing the original file.
-- **Accept equivalent wording** — record that a supported party-name or address presentation difference has the same business meaning.
+| Queue outcome | Available decisions | Result |
+|---|---|---|
+| `MISMATCH` | **Confirm discrepancy** | Create a follow-up case because the readable draft BL value must be corrected or confirmed. |
+| `MISMATCH` | **Correct an extracted value** | Enter the value shown in the source and recompute the comparison without changing the original file. |
+| `MISMATCH` | **Accept equivalent wording** | Record equivalent party-name or address presentation and complete automatically if all seven fields align. This option is unavailable when an operational field differs or any field is unresolved. |
+| `NEEDS_REVIEW` | **Request clarification** | Create a follow-up case because information or readable evidence is missing. |
+| `NEEDS_REVIEW` | **Correct an extracted value** | Enter a verified source value and recompute the comparison without changing the original file. |
+
+For a non-BL email with uncertain intent, the reviewer confirms the email category instead of seeing SI–BL comparison decisions.
 
 Reviews use the latest report ID as an optimistic concurrency check. If processing changed the report while a reviewer was working, the API returns a conflict instead of silently overwriting newer evidence. Every new processing or review result is appended, and earlier report versions remain visible in the audit history.
 
@@ -161,7 +176,11 @@ The React interface includes:
 - **Analytics** — processing outcomes, category volume, workflow states, mismatch fields, human-review reasons, optional Gemini status, and clearly labelled offline validation metrics; and
 - **Batch progress** — a live progress bar appears only while an inbox batch is running.
 
-#### 3.7 Demonstration path
+#### 3.7 Judge testing mailbox and demonstration path
+
+Judges can send a test message from their own email account to **`shipcheckclyvy@gmail.com`**. ShipCheck imports it through the configured Gmail connection, and any tracked follow-up is returned to the sender's address. Access to the Gmail account itself is not required.
+
+The Gmail password is intentionally not published. The application uses backend OAuth credentials, while evaluators interact through the public ShipCheck workspace and their own sender inbox.
 
 A judge can exercise the main workflow without editing data:
 
@@ -173,9 +192,13 @@ A judge can exercise the main workflow without editing data:
 6. Reply in the tracked Gmail thread with a revised attachment, select **Sync Gmail**, and inspect the newest response at the top of the case.
 7. Open **Analytics** to inspect live operational counts and the separate frozen evaluation artifacts.
 
-![How ShipCheck combines AI, deterministic rules and human review](docs/images/shipcheck-decision-flow.png)
-
 ### 4. Technology stack and cloud infrastructure
+
+#### Deployed technical architecture
+
+![ShipCheck technical architecture](docs/images/shipcheck-technical-architecture.png)
+
+*Figure 3. React and FastAPI run in one Render container, with Supabase persistence, Gmail integration, optional Gemini assistance, and a versioned local classifier artifact.*
 
 | Layer | Implemented technology | Role in ShipCheck |
 |---|---|---|
@@ -190,8 +213,6 @@ A judge can exercise the main workflow without editing data:
 | Workspace integration | Gmail API + OAuth 2.0 | Inbox sync, attachment retrieval, tracked sending and response correlation |
 | Hosting | Docker on one Render web service | Builds React and serves UI and FastAPI from one HTTPS origin |
 | Engineering controls | pytest, TypeScript build, GitHub Actions | Automated backend checks, model training and production frontend build |
-
-![ShipCheck technical architecture](docs/images/shipcheck-technical-architecture.png)
 
 #### Why the AI and cloud layers are meaningful
 
@@ -272,18 +293,6 @@ Reviewer names in the prototype are self-reported. They are audit context, not a
 - Gemini is optional and capped per server process. Exhausted quota, invalid credentials or network failure never stops deterministic processing.
 - The explicit `--demo` mode stores new reports in memory and resets on restart. The Render deployment sets `ALLOW_DEMO_MODE=false` and requires Supabase.
 
-#### 5.5 Final-round judging evidence map
-
-| Judging dimension | Reviewable evidence in this repository |
-|---|---|
-| End-to-end functionality | Dataset/Gmail ingestion → classification → document extraction → comparison → review → Gmail follow-up → reply correlation → reprocessing |
-| Architecture and scalability | One-origin container architecture, Pydantic contracts, Supabase persistence, compact inbox summaries and private object storage |
-| Technology integration | Trained text classifier, bounded Gemini fallback, OCR, Gmail OAuth/API, Supabase and Render |
-| Engineering quality and robustness | Evidence-backed decisions, conservative escalation, stale-review protection, append-only report history, circuit breaker and automated tests |
-| Solution effectiveness and user value | Seven-field SI-reference comparison, exact mismatch visibility, batch actions and automatic completion |
-| User experience and differentiation | Searchable workspace, clear outcome queues, latest-response evidence, analytics, case tracking and prefilled/batch Gmail actions |
-| Impact and future potential | Provider-neutral ingestion endpoint, replaceable classifier artifact, cloud persistence and a documented production measurement loop |
-
 ---
 
 ## Part 2 — Folder guide
@@ -325,8 +334,6 @@ Reviewer names in the prototype are self-reported. They are audit context, not a
 ├── requirements-evaluation.txt Optional local organizer-scorer dependencies
 └── run.py                     Local application launcher
 ```
-
-A beginner-friendly Chinese code guide is available at [`planning/03-code-guide.zh-CN.md`](planning/03-code-guide.zh-CN.md).
 
 ---
 
@@ -490,14 +497,6 @@ Full cloud instructions and pre-submission checks are in [`docs/DEPLOYMENT.md`](
 
 ## Part 5 — Team
 
-ShipCheck was built for the **Averis × Monash Hackathon 2026**.
-
-The source repository is maintained by [@lishan0311](https://github.com/lishan0311). The registered team roster and contact details are maintained in the official hackathon submission form; this README does not invent or infer names and role assignments that are not present in the repository.
-
-For a technical review, start with:
-
-- [`backend/pipeline.py`](backend/pipeline.py) and [`backend/comparison.py`](backend/comparison.py) for the decision pipeline;
-- [`backend/server.py`](backend/server.py) and [`backend/repository.py`](backend/repository.py) for API and cloud persistence;
-- [`frontend/src/App.tsx`](frontend/src/App.tsx) for the operator workflow;
-- [`tests/`](tests/) and [`docs/VALIDATION.md`](docs/VALIDATION.md) for reproducible evidence; and
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the live architecture and environment checklist.
+| Name | Role |
+|---|---|
+| [@lishan0311](https://github.com/lishan0311) | Repository maintainer |
