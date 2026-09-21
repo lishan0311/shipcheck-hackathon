@@ -33,7 +33,7 @@ from .mailbox import GmailMailbox
 from .pipeline import process_email
 from .repository import MemoryRepository, SupabaseRepository, StaleReview, timestamp
 from .review import apply_review
-from .schemas import BatchStatus, Email, EmailDetail, FollowUpBatchRequest, InboxResponse, IncomingEmail, Report, ReviewRequest, Run
+from .schemas import BatchRequest, BatchStatus, Email, EmailDetail, FollowUpBatchRequest, InboxResponse, IncomingEmail, Report, ReviewRequest, Run
 from .settings import ROOT, Settings
 
 log = logging.getLogger(__name__)
@@ -271,16 +271,23 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
         )
         return auto_complete(compared)
 
-    def run_batch(force=False):
+    def run_batch(force=False, email_ids=None):
         try:
             existing = repo.latest_all(compact=True)
             with index_lock:
                 indexed_ids = [item['email_id'] for item in email_index]
-            targets = indexed_ids if force else [email_id for email_id in indexed_ids if email_id not in existing]
+            indexed_set = set(indexed_ids)
+            if email_ids is not None:
+                # Keep the supplied order, discard stale IDs and process each email once.
+                targets = list(dict.fromkeys(email_id for email_id in email_ids if email_id in indexed_set))
+                skipped = 0
+            else:
+                targets = indexed_ids if force else [email_id for email_id in indexed_ids if email_id not in existing]
+                skipped = len(indexed_ids) - len(targets)
             with batch_lock:
                 batch_state.update(
-                    running=True, total=len(indexed_ids), completed=0, failed=0,
-                    skipped=len(indexed_ids) - len(targets), current_email_id=None,
+                    running=True, total=len(targets) if email_ids is not None else len(indexed_ids), completed=0, failed=0,
+                    skipped=skipped, current_email_id=None,
                     started_at=timestamp(), finished_at=None,
                 )
             for email_id in targets:
@@ -304,11 +311,11 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
             with batch_lock:
                 batch_state.update(running=False, current_email_id=None, finished_at=timestamp())
 
-    def start_batch(force=False):
+    def start_batch(force=False, email_ids=None):
         with batch_lock:
             if batch_state['running'] or (batch_thread[0] and batch_thread[0].is_alive()):
                 return copy.deepcopy(batch_state)
-            thread = threading.Thread(target=run_batch, args=(force,), name='inbox-auto-processor', daemon=True)
+            thread = threading.Thread(target=run_batch, args=(force, email_ids), name='inbox-auto-processor', daemon=True)
             batch_thread[0] = thread
             thread.start()
             return copy.deepcopy(batch_state)
@@ -589,8 +596,9 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
             return copy.deepcopy(batch_state)
 
     @app.post('/api/batch/start', response_model=BatchStatus, dependencies=[Depends(authorize)])
-    def batch_start(force: bool = False):
-        return start_batch(force=force)
+    def batch_start(force: bool = False, request: BatchRequest | None = None):
+        requested_force = request.force if request and request.force is not None else force
+        return start_batch(force=requested_force, email_ids=request.email_ids if request else None)
 
     @app.get('/api/emails', response_model=InboxResponse, dependencies=[Depends(authorize)])
     def emails():

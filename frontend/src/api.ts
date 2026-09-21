@@ -19,7 +19,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const api = {
   health: () => request<Health>('/health'),
   batch: () => request<BatchStatus>('/batch'),
-  startBatch: (force=false) => request<BatchStatus>(`/batch/start${force?'?force=true':''}`, {method: 'POST', body: '{}'}),
+  startBatch: (force=false, emailIds?: string[]) => request<BatchStatus>('/batch/start', {method: 'POST', body: JSON.stringify({force, email_ids: emailIds})}),
   mailbox: () => request<MailboxStatus>('/mailbox/status'),
   syncMailbox: () => request<MailboxStatus>('/mailbox/sync', {method: 'POST', body: '{}'}),
   sendFollowUps: (emailIds:string[]) => request<FollowUpBatchResult>('/cases/follow-ups', {method:'POST',body:JSON.stringify({email_ids:emailIds})}),

@@ -147,6 +147,13 @@ class BatchStatus(BaseModel):
     finished_at: str | None = None
 
 
+class BatchRequest(BaseModel):
+    """Optional explicit set of inbox emails to process again."""
+    model_config = ConfigDict(extra='forbid')
+    force: bool | None = None
+    email_ids: list[str] | None = Field(default=None, max_length=520)
+
+
 class IncomingAttachment(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     filename: str = Field(min_length=1, max_length=180)

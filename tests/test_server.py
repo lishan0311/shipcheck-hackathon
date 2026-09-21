@@ -43,6 +43,20 @@ def test_force_batch_reprocesses_existing_reports(environment):
     assert len(repo.history('demo')) == 2
 
 
+def test_selected_batch_reprocesses_only_selected_inbox_emails(environment):
+    client, repo, _, _ = environment
+    client.post('/api/emails/demo/process').raise_for_status()
+    response = client.post('/api/batch/start', json={'force': True, 'email_ids': ['demo', 'missing', 'demo']})
+    assert response.status_code == 200
+    deadline = time.monotonic() + 3
+    while len(repo.history('demo')) < 2 and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert len(repo.history('demo')) == 2
+    batch = client.get('/api/batch').json()
+    assert batch['total'] == 1
+    assert batch['skipped'] == 0
+
+
 def test_analytics_returns_operational_aggregates(environment):
     client, _, _, _, = environment
     client.post('/api/emails/demo/process').raise_for_status()
