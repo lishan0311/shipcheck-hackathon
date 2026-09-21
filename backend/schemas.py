@@ -154,6 +154,18 @@ class BatchRequest(BaseModel):
     email_ids: list[str] | None = Field(default=None, max_length=520)
 
 
+class ArchiveRequest(BaseModel):
+    """Emails to hide from or restore to the operational inbox."""
+    model_config = ConfigDict(extra='forbid')
+    email_ids: list[str] = Field(min_length=1, max_length=520)
+
+    @model_validator(mode='after')
+    def unique_ids(self):
+        if len(self.email_ids) != len(set(self.email_ids)):
+            raise ValueError('Each email can appear only once.')
+        return self
+
+
 class IncomingAttachment(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     filename: str = Field(min_length=1, max_length=180)

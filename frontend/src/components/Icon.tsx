@@ -1,5 +1,5 @@
 type IconProps = {
-  name: 'inbox' | 'review' | 'left' | 'right' | 'down' | 'download' | 'refresh' | 'mail' | 'check' | 'warning' | 'external' | 'document' | 'search';
+  name: 'inbox' | 'review' | 'left' | 'right' | 'down' | 'download' | 'refresh' | 'mail' | 'check' | 'warning' | 'external' | 'document' | 'search' | 'archive';
   className?: string;
 };
 

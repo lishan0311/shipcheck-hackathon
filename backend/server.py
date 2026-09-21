@@ -32,7 +32,7 @@ from .mailbox import GmailMailbox
 from .pipeline import process_email
 from .repository import MemoryRepository, SupabaseRepository, StaleReview, timestamp
 from .review import apply_review
-from .schemas import BatchRequest, BatchStatus, Email, EmailDetail, FollowUpBatchRequest, InboxResponse, IncomingEmail, Report, ReviewRequest, Run
+from .schemas import ArchiveRequest, BatchRequest, BatchStatus, Email, EmailDetail, FollowUpBatchRequest, InboxResponse, IncomingEmail, Report, ReviewRequest, Run
 from .settings import ROOT, Settings
 
 log = logging.getLogger(__name__)
@@ -274,7 +274,8 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
         try:
             existing = repo.latest_all(compact=True)
             with index_lock:
-                indexed_ids = [item['email_id'] for item in email_index]
+                archived_ids = repo.archived_email_ids()
+                indexed_ids = [item['email_id'] for item in email_index if item['email_id'] not in archived_ids]
             indexed_set = set(indexed_ids)
             if email_ids is not None:
                 # Keep the supplied order, discard stale IDs and process each email once.
@@ -595,16 +596,41 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
         requested_force = request.force if request and request.force is not None else force
         return start_batch(force=requested_force, email_ids=request.email_ids if request else None)
 
-    @app.get('/api/emails', response_model=InboxResponse, dependencies=[Depends(authorize)])
-    def emails():
+    def indexed_inbox(archived=False):
         latest = repo.latest_all(compact=True)
+        archived_ids = repo.archived_email_ids()
         with index_lock:
             items = copy.deepcopy(email_index)
         return {
             'emails': [{**item, 'latest': latest.get(item['email_id'])} for item in items
-                       if not str((latest.get(item['email_id']) or {}).get('result', {}).get('routing_status', '')).startswith('CASE_RESPONSE:')],
+                       if (item['email_id'] in archived_ids) == archived
+                       and not str((latest.get(item['email_id']) or {}).get('result', {}).get('routing_status', '')).startswith('CASE_RESPONSE:')],
             'errors': index_errors,
         }
+
+    @app.get('/api/emails', response_model=InboxResponse, dependencies=[Depends(authorize)])
+    def emails():
+        return indexed_inbox()
+
+    @app.get('/api/archived', response_model=InboxResponse, dependencies=[Depends(authorize)])
+    def archived_emails():
+        return indexed_inbox(archived=True)
+
+    @app.post('/api/emails/archive', dependencies=[Depends(authorize)])
+    def archive_emails(request: ArchiveRequest):
+        with index_lock:
+            known_ids = {item['email_id'] for item in email_index}
+        selected = [email_id for email_id in request.email_ids if email_id in known_ids]
+        repo.set_archived(selected, True)
+        return {'updated': len(selected)}
+
+    @app.post('/api/emails/restore', dependencies=[Depends(authorize)])
+    def restore_emails(request: ArchiveRequest):
+        with index_lock:
+            known_ids = {item['email_id'] for item in email_index}
+        selected = [email_id for email_id in request.email_ids if email_id in known_ids]
+        repo.set_archived(selected, False)
+        return {'updated': len(selected)}
 
     @app.post('/api/incoming-email', response_model=Run, dependencies=[Depends(authorize)])
     def incoming_email(request: IncomingEmail):

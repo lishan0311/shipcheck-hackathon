@@ -49,6 +49,7 @@ class MemoryRepository:
         self.jobs = {}
         self.emails = {}
         self.attachments = {}
+        self.archived = set()
         self.lock = threading.Lock()
 
     def sync_email(self, email, dataset):
@@ -77,6 +78,15 @@ class MemoryRepository:
         latest = {run['email_id']: run for run in self.runs}
         return {email_id: copy.deepcopy(compact_run(run) if compact else run) for email_id, run in latest.items()}
 
+    def archived_email_ids(self):
+        return set(self.archived)
+
+    def set_archived(self, email_ids, archived):
+        if archived:
+            self.archived.update(email_ids)
+        else:
+            self.archived.difference_update(email_ids)
+
     def close(self):
         pass
 
@@ -97,9 +107,16 @@ class SupabaseRepository:
 
     def sync_email(self, email, dataset):
         from .ingestion import _dataset_path
+        existing = self.request('GET', '/rest/v1/emails', params={
+            'select': 'payload', 'email_id': f"eq.{email['email_id']}", 'limit': 1,
+        })
+        payload = copy.deepcopy(email)
+        workspace = (existing[0].get('payload') or {}).get('_shipcheck') if existing else None
+        if workspace:
+            payload['_shipcheck'] = workspace
         self.request('POST', '/rest/v1/emails', params={'on_conflict': 'email_id'},
                      headers={'Prefer': 'resolution=merge-duplicates,return=minimal'},
-                     json={'email_id': email['email_id'], 'payload': email})
+                     json={'email_id': email['email_id'], 'payload': payload})
         for relative in email['attachments']:
             file = _dataset_path(dataset.resolve(), relative)
             if not file.is_file():
@@ -141,6 +158,28 @@ class SupabaseRepository:
             rows = self.request('GET', '/rest/v1/latest_reports', params={'select': 'run_id,email_id,created_at,result'})
             rows = [compact_run(row) for row in rows]
         return {row['email_id']: row for row in rows}
+
+    def archived_email_ids(self):
+        rows = self.request('GET', '/rest/v1/emails', params={'select': 'email_id,payload'})
+        return {
+            row['email_id'] for row in rows
+            if bool(((row.get('payload') or {}).get('_shipcheck') or {}).get('archived'))
+        }
+
+    def set_archived(self, email_ids, archived):
+        for email_id in email_ids:
+            rows = self.request('GET', '/rest/v1/emails', params={
+                'select': 'payload', 'email_id': f'eq.{email_id}', 'limit': 1,
+            })
+            if not rows:
+                continue
+            payload = rows[0].get('payload') or {}
+            workspace = dict(payload.get('_shipcheck') or {})
+            workspace['archived'] = archived
+            workspace['archived_at'] = timestamp() if archived else None
+            payload['_shipcheck'] = workspace
+            self.request('PATCH', '/rest/v1/emails', params={'email_id': f'eq.{email_id}'},
+                         headers={'Prefer': 'return=minimal'}, json={'payload': payload})
 
     def close(self):
         self.client.close()

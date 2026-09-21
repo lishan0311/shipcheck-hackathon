@@ -57,6 +57,24 @@ def test_selected_batch_reprocesses_only_selected_inbox_emails(environment):
     assert batch['skipped'] == 0
 
 
+def test_archive_hides_an_email_without_deleting_its_report(environment):
+    client, repo, _, _ = environment
+    client.post('/api/emails/demo/process').raise_for_status()
+    assert len(repo.history('demo')) == 1
+
+    archived = client.post('/api/emails/archive', json={'email_ids': ['demo']})
+    assert archived.status_code == 200
+    assert archived.json()['updated'] == 1
+    assert client.get('/api/emails').json()['emails'] == []
+    assert [item['email_id'] for item in client.get('/api/archived').json()['emails']] == ['demo']
+    assert len(repo.history('demo')) == 1
+
+    restored = client.post('/api/emails/restore', json={'email_ids': ['demo']})
+    assert restored.status_code == 200
+    assert [item['email_id'] for item in client.get('/api/emails').json()['emails']] == ['demo']
+    assert client.get('/api/archived').json()['emails'] == []
+
+
 def test_analytics_returns_operational_aggregates(environment):
     client, _, _, _, = environment
     client.post('/api/emails/demo/process').raise_for_status()
