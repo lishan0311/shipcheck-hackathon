@@ -42,7 +42,7 @@ class Settings:
             demo=os.getenv('ALLOW_DEMO_MODE', 'false').lower() == 'true',
             frontend_origin=os.getenv('FRONTEND_ORIGIN', ''),
             access_token=os.getenv('APP_ACCESS_TOKEN', ''),
-            auto_process=os.getenv('AUTO_PROCESS_INBOX', 'true').lower() == 'true',
+            auto_process=os.getenv('AUTO_PROCESS_INBOX', 'false').lower() == 'true',
             mail_provider=os.getenv('MAIL_PROVIDER', '').strip().lower(),
             gmail_client_id=os.getenv('GMAIL_CLIENT_ID', '').strip(),
             gmail_client_secret=os.getenv('GMAIL_CLIENT_SECRET', '').strip(),

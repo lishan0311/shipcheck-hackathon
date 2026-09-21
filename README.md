@@ -120,7 +120,7 @@ Without credentials, the explicit local demo uses memory and clearly says so in 
 - `/review`: action queue for uncertain/failed cases and reviewed cases ready to contact.
 - `/review/:emailId`: confirm the email category, correct extracted values and record a reason.
 
-The supplied 520-email inbox is processed automatically in the background. Existing reports are skipped on restart. An operator can re-run an individual email after a model or extraction update; each new report is appended, so the previous audit history remains available. Inbox refreshes use compact summaries while complete evidence remains available on each detail page.
+Use **Process inbox** in the top bar to process all supplied emails that do not yet have a saved report. The button is disabled once the inbox is complete. While a batch runs, its progress bar is visible below the KPI cards and disappears when the batch finishes. An operator can re-run an individual email after a model or extraction update; each new report is appended, so the previous audit history remains available. Inbox refreshes use compact summaries while complete evidence remains available on each detail page.
 
 | Required category | System action |
 |---|---|
