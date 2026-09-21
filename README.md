@@ -136,7 +136,7 @@ When Gmail is configured, the backend polls the authorized Inbox, imports new me
 
 Reviewer names are self-reported. The deployed workspace opens directly for the hackathon demonstration.
 
-The application initially reads the participant inbox from the bundled dataset. Processing synchronizes the email and its original attachments to Supabase. New Gmail messages use the same processing and persistence path.
+The application initially reads the participant inbox from the bundled dataset. Processing synchronizes the email and its original attachments to Supabase. New Gmail messages use the same processing and persistence path. On startup, a Render instance restores persisted `mail_*` and `live_*` records plus hash-verified attachment bytes from private Supabase Storage before it resumes polling Gmail.
 
 ## Real Gmail / Google Workspace inbox
 

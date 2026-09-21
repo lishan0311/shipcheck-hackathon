@@ -29,3 +29,37 @@ def test_supabase_conflict_is_exposed_as_stale_review():
     repo=SupabaseRepository('https://project.supabase.co','key','bucket',client)
     with pytest.raises(StaleReview):
         repo.save('demo',{})
+
+
+def test_supabase_recovers_only_live_messages_and_verifies_attachment_hash():
+    content = b'SHIPPING INSTRUCTION\nShipper: Example Exporter'
+    digest = __import__('hashlib').sha256(content).hexdigest()
+
+    def respond(request):
+        if request.url.path == '/rest/v1/emails':
+            return httpx.Response(200, json=[
+                {'email_id': 'email_001', 'payload': {'email_id': 'email_001', 'attachments': []}},
+                {'email_id': 'mail_abc', 'payload': {
+                    'email_id': 'mail_abc', 'from': 'sender@example.com', 'subject': 'Check',
+                    'body': 'Please compare', 'attachments': ['attachments/mail_abc_0_si.txt'],
+                    '_shipcheck': {'archived': False},
+                }},
+            ])
+        if request.url.path == '/rest/v1/attachments':
+            return httpx.Response(200, json=[{
+                'email_id': 'mail_abc', 'path': 'attachments/mail_abc_0_si.txt',
+                'object_path': 'mail_abc/hash/mail_abc_0_si.txt', 'sha256': digest,
+                'size_bytes': len(content),
+            }])
+        if request.url.path.endswith('/mail_abc/hash/mail_abc_0_si.txt'):
+            return httpx.Response(200, content=content)
+        return httpx.Response(404)
+
+    client = httpx.Client(base_url='https://project.supabase.co', transport=httpx.MockTransport(respond))
+    repo = SupabaseRepository('https://project.supabase.co', 'key', 'bucket', client)
+    messages, errors = repo.recover_live_messages()
+    assert errors == []
+    assert len(messages) == 1
+    assert messages[0]['email']['email_id'] == 'mail_abc'
+    assert '_shipcheck' not in messages[0]['email']
+    assert messages[0]['attachments'][0]['content'] == content

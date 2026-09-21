@@ -135,6 +135,29 @@ def test_workspace_opens_without_access_token_and_keeps_origin_restricted(enviro
         assert 'access-control-allow-origin' not in response.headers
 
 
+def test_startup_restores_a_persisted_live_message(environment):
+    _, repo, classifier, root = environment
+    attachment = b'SHIPPING INSTRUCTION\nShipper: Example Exporter'
+    repo.recover_live_messages = lambda: ([{
+        'email': {
+            'email_id': 'mail_restore_1', 'from': 'sender@example.com', 'subject': 'Arrival update',
+            'body': 'The vessel has arrived.', 'attachments': ['attachments/mail_restore_1_0_si.txt'],
+        },
+        'attachments': [{'path': 'attachments/mail_restore_1_0_si.txt', 'content': attachment}],
+    }], [])
+    classifier.predict.return_value = {
+        'predicted_category': 'GENERAL', 'needs_review': False,
+        'confidence': 0.9, 'review_details': [],
+    }
+    settings = Settings(dataset=root, incoming_dir=root / 'restart-cache', demo=True)
+    with TestClient(create_app(settings, repo, classifier)) as client:
+        inbox = client.get('/api/emails').json()['emails']
+        detail = client.get('/api/emails/mail_restore_1').json()
+    assert inbox[0]['email_id'] == 'mail_restore_1'
+    assert detail['documents'][0]['text'] == attachment.decode()
+    assert repo.history('mail_restore_1')[0]['result']['category'] == 'GENERAL'
+
+
 def test_real_model_new_backend_contract():
     from model.classifier import EmailClassifier
     from pathlib import Path

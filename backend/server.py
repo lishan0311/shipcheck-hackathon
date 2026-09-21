@@ -140,6 +140,63 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
                                    'attachment_count': len(relative_paths)})
         return True
 
+    def restore_incoming(message):
+        """Recreate one persisted live message in Render's temporary cache."""
+        payload = Email.model_validate(message['email']).model_dump(by_alias=True)
+        email_id = payload['email_id']
+        if not email_id.startswith(('mail_', 'live_')):
+            raise ValueError('Only persisted live messages may be restored.')
+        with index_lock:
+            if email_id in email_sources:
+                return False
+        root = settings.incoming_dir.resolve()
+        (root / 'inbox').mkdir(parents=True, exist_ok=True)
+        (root / 'attachments').mkdir(parents=True, exist_ok=True)
+        restored = {item['path']: item['content'] for item in message['attachments']}
+        if set(restored) != set(payload['attachments']):
+            raise ValueError('Recovered attachment paths do not match the persisted email.')
+        for relative in payload['attachments']:
+            target = _dataset_path(root, relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_suffix(target.suffix + '.tmp')
+            temporary.write_bytes(restored[relative])
+            temporary.replace(target)
+        inbox_file = _dataset_path(root, f'inbox/{email_id}.json')
+        temporary = inbox_file.with_suffix('.tmp')
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+        temporary.replace(inbox_file)
+        with index_lock:
+            if email_id in email_sources:
+                return False
+            email_sources[email_id] = root
+            email_index.insert(0, {
+                'email_id': email_id, 'from': payload['from'], 'subject': payload['subject'],
+                'attachment_count': len(payload['attachments']),
+            })
+        return True
+
+    def hydrate_live_inbox():
+        """Restore durable Gmail/webhook records after a Render restart."""
+        messages, recovery_errors = repo.recover_live_messages()
+        index_errors.extend(recovery_errors)
+        restored_ids = []
+        for message in messages:
+            try:
+                if restore_incoming(message):
+                    restored_ids.append(message['email']['email_id'])
+            except (OSError, ValueError) as exc:
+                email_id = message.get('email', {}).get('email_id', 'unknown')
+                index_errors.append({'file': f'{email_id}.json', 'error': f'Could not restore live email: {exc}'})
+        # A process can stop after persistence but before its first report is
+        # saved. Resume just those recovered messages; never duplicate reports.
+        latest = repo.latest_all(compact=True)
+        for email_id in restored_ids:
+            if email_id not in latest:
+                try:
+                    process_one(email_id)
+                except RuntimeError:
+                    log.exception('Could not resume recovered message %s', email_id)
+
     def process_one(email_id):
         nonlocal model
         email = read_email(email_id)['email']
@@ -421,6 +478,13 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
     async def lifespan(app):
         if repo is None:
             raise RuntimeError('Configure Supabase, or explicitly enable demo mode for local development.')
+        try:
+            hydrate_live_inbox()
+        except (httpx.HTTPError, OSError, ValueError):
+            # The participant bundle remains usable during a temporary storage
+            # outage. The error is logged and shown in the inbox error count.
+            log.exception('Could not hydrate persisted live messages')
+            index_errors.append({'file': 'Supabase live mailbox', 'error': 'Could not restore persisted live messages.'})
         if settings.auto_process:
             start_batch()
         if mailbox is not None:

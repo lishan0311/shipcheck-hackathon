@@ -87,6 +87,10 @@ class MemoryRepository:
         else:
             self.archived.difference_update(email_ids)
 
+    def recover_live_messages(self):
+        """The in-memory demo has no object store to recover from."""
+        return [], []
+
     def close(self):
         pass
 
@@ -180,6 +184,57 @@ class SupabaseRepository:
             payload['_shipcheck'] = workspace
             self.request('PATCH', '/rest/v1/emails', params={'email_id': f'eq.{email_id}'},
                          headers={'Prefer': 'return=minimal'}, json={'payload': payload})
+
+    def recover_live_messages(self):
+        """Return persisted Gmail/webhook messages with verified attachment bytes.
+
+        Render's filesystem is intentionally disposable. Only messages created
+        after the supplied dataset use the `mail_` or `live_` ID prefixes, so
+        recovering those records cannot copy or mutate the participant bundle.
+        A corrupt or unavailable object is reported instead of being silently
+        restored as an empty attachment.
+        """
+        email_rows = self.request('GET', '/rest/v1/emails', params={'select': 'email_id,payload'})
+        attachment_rows = self.request(
+            'GET', '/rest/v1/attachments',
+            params={'select': 'email_id,path,object_path,sha256,size_bytes'},
+        )
+        attachment_index = {}
+        for row in attachment_rows:
+            attachment_index.setdefault(row.get('email_id'), {})[row.get('path')] = row
+
+        messages, errors = [], []
+        for row in email_rows:
+            email_id = str(row.get('email_id') or '')
+            if not email_id.startswith(('mail_', 'live_')):
+                continue
+            payload = copy.deepcopy(row.get('payload') or {})
+            payload.pop('_shipcheck', None)
+            paths = payload.get('attachments')
+            if not isinstance(paths, list) or any(not isinstance(path, str) or not path for path in paths):
+                errors.append({'file': f'{email_id}.json', 'error': 'Persisted live email has invalid attachment metadata.'})
+                continue
+            restored = []
+            try:
+                for relative in paths:
+                    metadata = attachment_index.get(email_id, {}).get(relative)
+                    if not metadata or not metadata.get('object_path'):
+                        raise ValueError(f'Attachment metadata is missing for {relative}.')
+                    encoded = quote(str(metadata['object_path']), safe='/')
+                    response = self.client.get(f'/storage/v1/object/{quote(self.bucket, safe="")}/{encoded}')
+                    response.raise_for_status()
+                    content = response.content
+                    if len(content) > 20 * 1024 * 1024:
+                        raise ValueError(f'Attachment exceeds the 20 MB limit: {relative}.')
+                    expected = metadata.get('sha256')
+                    if expected and hashlib.sha256(content).hexdigest() != expected:
+                        raise ValueError(f'Attachment integrity check failed for {relative}.')
+                    restored.append({'path': relative, 'content': content})
+            except (httpx.HTTPError, ValueError) as exc:
+                errors.append({'file': f'{email_id}.json', 'error': f'Could not restore live attachments: {exc}'})
+                continue
+            messages.append({'email': payload, 'attachments': restored})
+        return messages, errors
 
     def close(self):
         self.client.close()

@@ -30,18 +30,14 @@ cases as separate outcomes and filters.
 - Deterministic comparison rules and reproducible evaluation on the supplied
   dataset and a separately generated seed.
 
-## Priority 1: make Gmail ingestion restart-safe
+## Completed: restart-safe Gmail ingestion
 
-Incoming Gmail messages are currently written to `runtime/live-mailbox` before
-processing and also synchronized to Supabase. Render's local filesystem is
-ephemeral, so a restart can leave database reports present while the source
-message and attachment are unavailable to the application.
-
-Add repository methods to load stored email payloads, list attachment metadata
-and download private Storage objects. At startup, rebuild the incoming index
-from Supabase and hydrate a bounded local cache, or process documents directly
-from downloaded bytes. Add a restart integration test that imports one Gmail
-message, recreates the application, then opens and reprocesses the same case.
+Incoming Gmail and webhook records use `mail_*` / `live_*` identifiers. At
+startup the backend reads their persisted payloads, downloads their private
+Storage objects, verifies SHA-256 hashes and rebuilds the temporary local cache.
+A message without a saved report is processed once after recovery; existing
+reports are never duplicated. The regression tests cover Storage restoration
+and an application restart with an attachment.
 
 ## Priority 2: durable background jobs
 
