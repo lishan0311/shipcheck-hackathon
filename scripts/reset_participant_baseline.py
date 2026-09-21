@@ -68,8 +68,13 @@ def main() -> None:
             return
 
         repo.request('DELETE', '/rest/v1/reviews', params={'email_id': 'like.email_*'}, headers={'Prefer': 'return=minimal'})
-        for report in remove:
-            repo.request('DELETE', '/rest/v1/reports', params={'run_id': f"eq.{report['run_id']}"}, headers={'Prefer': 'return=minimal'})
+        if args.fresh:
+            # One server-side deletion prevents a long client-side loop from leaving
+            # a partially cleared workspace if the command is interrupted.
+            repo.request('DELETE', '/rest/v1/reports', params={'email_id': 'like.email_*'}, headers={'Prefer': 'return=minimal'})
+        else:
+            for report in remove:
+                repo.request('DELETE', '/rest/v1/reports', params={'run_id': f"eq.{report['run_id']}"}, headers={'Prefer': 'return=minimal'})
         repo.request('DELETE', '/rest/v1/processing_jobs', params={'email_id': 'like.email_*'}, headers={'Prefer': 'return=minimal'})
         print('Saved reports cleared.' if args.fresh else 'Baseline restored.')
         print('Original emails and attachments were not changed.')
