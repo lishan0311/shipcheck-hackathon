@@ -156,7 +156,7 @@ With Gmail configured, ShipCheck:
 - polls the authorized Inbox and offers an immediate **Sync Gmail** action;
 - imports supported attachments and uses stable Gmail message IDs to prevent duplicate ingestion;
 - processes newly imported mail through the same pipeline and cloud persistence path;
-- opens an individual prefilled Gmail compose window through **Contact sender**;
+- sends an individual tracked follow-up through the connected operations mailbox after confirmation;
 - sends all reviewed, follow-up-ready cases through the Gmail API after one confirmation;
 - adds `[SC-email_id]` to the subject and retains Gmail thread information;
 - detects sent follow-ups and moves cases to **Waiting for response**;
@@ -178,7 +178,7 @@ The React interface includes:
 
 #### 3.7 Judge testing mailbox and demonstration path
 
-Judges can send a test message from their own email account to **`shipcheckclyvy@gmail.com`**. ShipCheck imports it through the configured Gmail connection, and any tracked follow-up is returned to the sender's address. Access to the Gmail account itself is not required.
+Judges can send a test message from their own email account to **`shipcheckclyvy@gmail.com`**. ShipCheck imports it through the configured Gmail connection. After the judge records a follow-up decision, **Send follow-up** asks for confirmation and the backend sends the message from `shipcheckclyvy@gmail.com` through its stored Gmail OAuth token. The judge receives that message in the same personal or work inbox used to submit the test and can reply with a revised attachment. Access to the ShipCheck Gmail account itself is not required.
 
 The Gmail password is intentionally not published. The application uses backend OAuth credentials, while evaluators interact through the public ShipCheck workspace and their own sender inbox.
 
@@ -188,7 +188,7 @@ A judge can exercise the main workflow without editing data:
 2. Open an `OK` comparison and expand **View source** to see the evidence behind both field values.
 3. Filter the Action queue by **Mismatch detected** and confirm a real discrepancy, correct an extraction, or accept equivalent wording.
 4. Filter by **Needs human review** and inspect the concrete reliability label and missing evidence.
-5. Confirm a follow-up decision; use **Contact sender** for one case or **Send all follow-ups** for all confirmed cases.
+5. Confirm a follow-up decision; use **Send follow-up** for one case or **Send all follow-ups** for all confirmed cases. Both actions use the backend Gmail connection.
 6. Reply in the tracked Gmail thread with a revised attachment, select **Sync Gmail**, and inspect the newest response at the top of the case.
 7. Open **Analytics** to inspect live operational counts and the separate frozen evaluation artifacts.
 

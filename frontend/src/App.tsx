@@ -47,6 +47,7 @@ function Detail({
   const [detail, setDetail] = useState<EmailDetail | null>(null),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
+    [sendingFollowUp, setSendingFollowUp] = useState(false),
     [runId, setRunId] = useState('');
   const reload = useCallback(async () => {
     if (!emailId) return;
@@ -84,6 +85,23 @@ function Detail({
       setBusy(false);
     }
   }
+  async function sendFollowUp() {
+    if (!emailId) return false;
+    setSendingFollowUp(true);
+    setError('');
+    try {
+      const response=await api.sendFollowUps([emailId]);
+      if(response.sent!==1) throw new Error(response.results[0]?.error||'Gmail could not send this follow-up.');
+      await reload();
+      await refresh();
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The follow-up could not be sent.');
+      return false;
+    } finally {
+      setSendingFollowUp(false);
+    }
+  }
   const run = detail?.history.find(item => item.run_id === runId);
   const status = statusOf(run);
   const responseReceived = run?.result.routing_status === 'RESPONSE_RECEIVED';
@@ -92,7 +110,7 @@ function Detail({
     <div className="detail-topline"><span className="email-reference">{detail.email.email_id}</span><span className={`badge ${tone(statusOf(run))}`}>{displayStatus(run)}</span></div>
     <h2 className="subject">{detail.email.subject || '(No subject)'}</h2><div className="sender-row"><span className="sender-avatar">{detail.email.from[0]?.toUpperCase()}</span><div><span className="sender-label">FROM</span><p>{detail.email.from}</p></div></div>
     <div className="action-bar"><label className="history-picker">Report version<select disabled={!detail.history.length || busy} value={runId} onChange={event => setRunId(event.target.value)}>{!detail.history.length && <option>Processing</option>}{detail.history.map((item, index) => <option key={item.run_id} value={item.run_id}>{index === 0 ? 'Latest / ' : ''}{date(item.created_at)}</option>)}</select></label><div className="action-buttons">{reviewing && <Link to={`/emails/${emailId}`} className="secondary"><Icon name="left" />Back to report</Link>}{!reviewing && run && reviewRequired && <Link to={`/review/${emailId}`} className="primary"><Icon name="review" />{responseReceived ? 'Review response' : 'Review case'}</Link>}<button disabled={busy} onClick={process} className="secondary"><Icon name="refresh" />{busy ? 'Processing...' : 'Reprocess'}</button></div></div>
-    <ReportView run={run} subject={detail.email.subject} sender={detail.email.from} />{reviewing && run && status === 'REVIEW_REQUIRED' && !responseReceived && (run === detail.history[0] ? <ReviewForm key={run.run_id} run={run} onSaved={async () => {
+    <ReportView run={run} sender={detail.email.from} onSendFollowUp={sendFollowUp} sendingFollowUp={sendingFollowUp} />{reviewing && run && status === 'REVIEW_REQUIRED' && !responseReceived && (run === detail.history[0] ? <ReviewForm key={run.run_id} run={run} onSaved={async () => {
         await reload();
         await refresh();
         navigate(`/emails/${emailId}`);

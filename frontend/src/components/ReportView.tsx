@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import type {Category, ExtractedValue, FieldComparison, FieldName, ReportSummary, ReviewReason, Run, RunSummary} from '../types';
 import Icon from './Icon';
 
@@ -97,17 +98,8 @@ function fallbackAction(run: Run) {
     : 'An operator must confirm what information is missing or unclear.';
 }
 
-function replyBody(run:Run) {
-  const issues=(Object.entries(run.result.fields) as [FieldName, FieldComparison][]).filter(([,field])=>field.state !== 'MATCH');
-  return [
-    'Hello,', '', 'We reviewed the draft Bill of Lading against the Shipping Instruction.',
-    ...(issues.length ? ['', 'Please review the following items:', ...issues.map(([name,field]) =>
-      `- ${fieldNames[name]}: SI - ${shownValue(field.si)} | Draft BL - ${shownValue(field.bl)}`)] : []),
-    '', 'Please confirm the missing information or provide a revised draft before finalisation.', '', 'Regards,', 'Shipping Operations',
-  ].join('\n');
-}
-
-function CaseSummary({run,subject,sender}: {run:Run;subject:string;sender:string}) {
+function CaseSummary({run,sender,onSendFollowUp,sendingFollowUp}: {run:Run;sender:string;onSendFollowUp:()=>Promise<boolean>;sendingFollowUp:boolean}) {
+  const [confirming,setConfirming]=useState(false);
   const result=run.result, status=statusOf(run), category=categoryOf(run), action=result.next_action || fallbackAction(run);
   const reviewReason=reviewReasonOf(run);
   const caseId=result.case_tracking?.case_id || (['REVIEW_REQUIRED','FOLLOW_UP_REQUIRED','WAITING_FOR_RESPONSE'].includes(status) ? `SC-${run.email_id}` : '');
@@ -117,9 +109,6 @@ function CaseSummary({run,subject,sender}: {run:Run;subject:string;sender:string
   const to=(sender.match(/<([^>]+)>/)?.[1] || sender).trim();
   const mailboxName=to.split('@')[0].split(/[._-]+/).filter(Boolean).map(part=>part[0]?.toUpperCase()+part.slice(1)).join(' ');
   const displayName=(sender.match(/^([^<]+)</)?.[1] || mailboxName || to).trim();
-  const marker=`[SC-${run.email_id}]`;
-  const replySubject=`${marker} ${/^re:/i.test(subject) ? subject : `Re: ${subject}`}`;
-  const gmailUrl=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyBody(run))}`;
   function downloadReport() {
     const lines = ['ShipCheck discrepancy report', `Email: ${run.email_id}`, `Generated: ${date(run.created_at)}`, '', `Next action: ${action}`, '',
       ...issues.flatMap(([name,field])=>[fieldNames[name],`  SI: ${shownValue(field.si)}`,`  Draft BL: ${shownValue(field.bl)}`,`  Decision: ${decisionText(field)}`,''])];
@@ -130,16 +119,17 @@ function CaseSummary({run,subject,sender}: {run:Run;subject:string;sender:string
   return <section className={`case-summary ${tone(status)}`}>
     <span className="case-summary-icon"><Icon name={icon}/></span>
     <div className="case-summary-copy"><span className="case-workflow">Category: {category ? categories[category] : 'Workflow confirmation required'}</span><h3>{displayStatus(run)}</h3><p>{action}</p>{reviewReason&&<span className="review-reason-tag">{reviewReasonLabels[reviewReason]}</span>}<small>{caseId ? `Case ${caseId} / ` : ''}{result.routing_source==='human_review'?'Human decision recorded':'Automated result'} / {date(run.created_at)}</small>{!!result.review_details.length&&<p className="case-note">Required: {result.review_details.join(' ')}</p>}</div>
-    {followUpReady&&<div className="case-summary-actions"><a className="primary" href={gmailUrl} target="_blank" rel="noreferrer" title={`Contact ${displayName} in Gmail`}><Icon name="external"/>Contact sender</a><button type="button" className="secondary" onClick={downloadReport}><Icon name="download"/>Download report</button></div>}
+    {followUpReady&&<div className="case-summary-actions"><button type="button" className="primary" disabled={sendingFollowUp} onClick={()=>setConfirming(true)} title={`Send a tracked follow-up to ${displayName}`}><Icon name="mail"/>{sendingFollowUp?'Sending...':'Send follow-up'}</button><button type="button" className="secondary" onClick={downloadReport}><Icon name="download"/>Download report</button></div>}
+    {confirming&&<div className="modal-backdrop" role="presentation"><section className="follow-up-modal" role="dialog" aria-modal="true" aria-labelledby="single-follow-up-title"><span className="modal-icon"><Icon name="mail"/></span><h2 id="single-follow-up-title">Send follow-up to {displayName}?</h2><p>ShipCheck will send this tracked message from the connected operations mailbox. The case will move to Waiting for response after Gmail accepts it.</p><div className="follow-up-preview"><div><strong>{caseId}</strong><span>{to}</span></div></div><div className="modal-actions"><button type="button" className="secondary" disabled={sendingFollowUp} onClick={()=>setConfirming(false)}>Cancel</button><button type="button" className="primary" disabled={sendingFollowUp} onClick={async()=>{await onSendFollowUp();setConfirming(false);}}><Icon name="mail"/>{sendingFollowUp?'Sending...':'Send email'}</button></div></section></div>}
   </section>;
 }
 
-export default function ReportView({run,subject,sender}: {run: Run | undefined;subject:string;sender:string}) {
+export default function ReportView({run,sender,onSendFollowUp,sendingFollowUp}: {run:Run|undefined;sender:string;onSendFollowUp:()=>Promise<boolean>;sendingFollowUp:boolean}) {
   if (!run) return <div className="case-summary"><span className="case-summary-icon"><Icon name="warning"/></span><div className="case-summary-copy"><h3>Queued for processing</h3><p>The workflow and required action will appear when processing finishes.</p></div></div>;
   const result = run.result;
   const entries = Object.entries(result.fields) as [FieldName, FieldComparison][];
   return <>
-    <CaseSummary run={run} subject={subject} sender={sender}/>
+    <CaseSummary run={run} sender={sender} onSendFollowUp={onSendFollowUp} sendingFollowUp={sendingFollowUp}/>
     {result.error&&<p role="alert" className="error-box">{result.error.message}</p>}
     {!!entries.length&&<section className="comparison-section"><div className="table-heading"><div><h3>SI and draft BL comparison</h3><p>The SI is the reference document.</p></div><span>{entries.filter(([,value])=>value.state==='MATCH').length} / 7 aligned</span></div><div className="table-wrap"><table><thead><tr><th>Field</th><th>SI reference</th><th>Draft BL</th><th>Result</th></tr></thead><tbody>{entries.map(([key,field])=><tr key={key} className={field.state.toLowerCase()}><td>{fieldNames[key]}</td>{(['si','bl'] as const).map(side=><td key={side}><span className="value">{shownValue(field[side])}</span><Evidence item={field[side]}/></td>)}<td><span className="field-state">{decisionText(field)}</span>{field.state==='MISMATCH'&&<small className="decision-note">Names, legal qualifiers and addresses are business content. Case, punctuation and line breaks are ignored.</small>}{field.resolution==='ACCEPTED_EQUIVALENT'&&<small className="decision-note">Accepted by a reviewer with an audit reason.</small>}</td></tr>)}</tbody></table></div></section>}
     {!!result.review_history.length&&<details className="audit"><summary>Decision history ({result.review_history.length}) <Icon name="down"/></summary><div className="audit-list">{result.review_history.map((entry,index)=><div key={index}><strong>{String(entry.decision||'Review recorded').replaceAll('_',' ')}</strong><p>{String(entry.reason||'No reason recorded')}</p><small>{String(entry.reviewer||'Operator')} / {entry.created_at?date(String(entry.created_at)):''}</small></div>)}</div></details>}
