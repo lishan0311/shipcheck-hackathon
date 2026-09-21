@@ -104,14 +104,14 @@ function Workspace({
   emails,
   refresh,
   reviewOnly = false,
-  processSelected,
-  batchRunning
+  selectedIds,
+  toggleSelected
 }: {
   emails: EmailSummary[];
   refresh: () => Promise<void>;
   reviewOnly?: boolean;
-  processSelected: (emailIds: string[]) => Promise<void>;
-  batchRunning: boolean;
+  selectedIds: Set<string>;
+  toggleSelected: (emailId: string) => void;
 }) {
   const [query, setQuery] = useState(''),
     [category, setCategory] = useState('all'),
@@ -120,8 +120,7 @@ function Workspace({
   const [confirming, setConfirming] = useState(false),
     [sending, setSending] = useState(false),
     [followUpMessage, setFollowUpMessage] = useState(''),
-    [followUpError, setFollowUpError] = useState(''),
-    [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+    [followUpError, setFollowUpError] = useState('');
   const location = useLocation();
   const readyFollowUps = useMemo(() => emails.filter(email => statusOf(email.latest) === 'FOLLOW_UP_REQUIRED'), [emails]);
   const filtered = useMemo(() => emails.filter(email => {
@@ -135,9 +134,6 @@ function Workspace({
   }), [emails, query, category, result, reviewOnly]);
   const pages = Math.max(1, Math.ceil(filtered.length / 30)),
     current = Math.min(page, pages - 1);
-  const pageEmails = filtered.slice(current * 30, current * 30 + 30);
-  const selectedCount = selectedIds.size;
-  const pageIsSelected = pageEmails.length > 0 && pageEmails.every(email => selectedIds.has(email.email_id));
   const reset = (setter: (value: string) => void) => (event: React.ChangeEvent<HTMLSelectElement>) => {
     setter(event.target.value);
     setPage(0);
@@ -156,26 +152,7 @@ function Workspace({
       setSending(false);
     }
   }
-  function toggleEmail(emailId: string) {
-    setSelectedIds(currentSelection => {
-      const next = new Set(currentSelection);
-      next.has(emailId) ? next.delete(emailId) : next.add(emailId);
-      return next;
-    });
-  }
-  function togglePage() {
-    setSelectedIds(currentSelection => {
-      const next = new Set(currentSelection);
-      if (pageIsSelected) pageEmails.forEach(email => next.delete(email.email_id));else pageEmails.forEach(email => next.add(email.email_id));
-      return next;
-    });
-  }
-  async function processSelection() {
-    if (!selectedCount || batchRunning) return;
-    await processSelected([...selectedIds]);
-    setSelectedIds(new Set());
-  }
-  return <div className="workbench"><aside className="inbox"><div className="inbox-heading"><div><h2>{reviewOnly ? 'Action queue' : 'Email inbox'}</h2><p>{reviewOnly ? 'Review decisions and sender follow-ups' : 'Automatically classified and routed'}</p></div><span className="count-chip">{filtered.length}</span></div>{!reviewOnly && <div className="bulk-process"><label><input type="checkbox" checked={pageIsSelected} onChange={togglePage} />Select page</label><button className="secondary" disabled={!selectedCount || batchRunning} onClick={processSelection}><Icon name="refresh" />{batchRunning ? 'Processing...' : `Process selected (${selectedCount})`}</button></div>}{reviewOnly && <div className="bulk-follow-up"><div><strong>Ready to contact</strong><span>{readyFollowUps.length} confirmed case{readyFollowUps.length === 1 ? '' : 's'}</span></div><button className="primary" disabled={!readyFollowUps.length} onClick={() => {
+  return <div className="workbench"><aside className="inbox"><div className="inbox-heading"><div><h2>{reviewOnly ? 'Action queue' : 'Email inbox'}</h2><p>{reviewOnly ? 'Review decisions and sender follow-ups' : 'Automatically classified and routed'}</p></div><span className="count-chip">{filtered.length}</span></div>{reviewOnly && <div className="bulk-follow-up"><div><strong>Ready to contact</strong><span>{readyFollowUps.length} confirmed case{readyFollowUps.length === 1 ? '' : 's'}</span></div><button className="primary" disabled={!readyFollowUps.length} onClick={() => {
           setConfirming(true);
           setFollowUpMessage('');
           setFollowUpError('');
@@ -186,7 +163,7 @@ function Workspace({
           const status = statusOf(email.latest),
             emailCategory = categoryOf(email.latest),
             hasCase = ['REVIEW_REQUIRED', 'FOLLOW_UP_REQUIRED', 'WAITING_FOR_RESPONSE'].includes(status);
-          return <div className="selectable-email-row" key={email.email_id}>{!reviewOnly && <label className="email-select"><input type="checkbox" aria-label={`Select ${email.subject}`} checked={selectedIds.has(email.email_id)} onChange={() => toggleEmail(email.email_id)} /></label>}<Link className={`email-row ${location.pathname.endsWith('/' + email.email_id) ? 'active' : ''}`} to={`/${reviewOnly ? 'review' : 'emails'}/${email.email_id}`}><span className="email-meta"><span className="email-reference-small">{hasCase ? `Case SC-${email.email_id}` : email.email_id}</span><span className={`email-status ${tone(status)}`}>{displayStatus(email.latest)}</span></span><strong>{email.subject}</strong><span className="category-label">Category: {emailCategory ? categories[emailCategory] : 'Awaiting classification'}</span><span className="email-from">{email.from} / {email.attachment_count} attachment{email.attachment_count === 1 ? '' : 's'}</span></Link></div>;
+          return <div className="selectable-email-row" key={email.email_id}>{!reviewOnly && <label className="email-select"><input type="checkbox" aria-label={`Select ${email.subject}`} checked={selectedIds.has(email.email_id)} onChange={() => toggleSelected(email.email_id)} /></label>}<Link className={`email-row ${location.pathname.endsWith('/' + email.email_id) ? 'active' : ''}`} to={`/${reviewOnly ? 'review' : 'emails'}/${email.email_id}`}><span className="email-meta"><span className="email-reference-small">{hasCase ? `Case SC-${email.email_id}` : email.email_id}</span><span className={`email-status ${tone(status)}`}>{displayStatus(email.latest)}</span></span><strong>{email.subject}</strong><span className="category-label">Category: {emailCategory ? categories[emailCategory] : 'Awaiting classification'}</span><span className="email-from">{email.from} / {email.attachment_count} attachment{email.attachment_count === 1 ? '' : 's'}</span></Link></div>;
         })}{!filtered.length && <p className="empty small">No emails match these filters.</p>}</div><div className="paging"><button disabled={current === 0} onClick={() => setPage(current - 1)} aria-label="Previous page"><Icon name="left" /></button><span>Page {current + 1} of {pages}</span><button disabled={current === pages - 1} onClick={() => setPage(current + 1)} aria-label="Next page"><Icon name="right" /></button></div></aside><Routes><Route path=":emailId" element={<Detail refresh={refresh} reviewing={reviewOnly} />} /><Route path="*" element={<section className="detail empty"><Icon name="mail" className="empty-symbol" /><h2>{reviewOnly ? 'Choose a case to resolve' : 'Choose an email'}</h2><p>The category, work status and processing result will appear here.</p></section>} /></Routes>{confirming && <div className="modal-backdrop" role="presentation"><section className="follow-up-modal" role="dialog" aria-modal="true" aria-labelledby="follow-up-title"><span className="modal-icon"><Icon name="mail" /></span><h2 id="follow-up-title">Send {readyFollowUps.length} reviewed follow-up{readyFollowUps.length === 1 ? '' : 's'}?</h2><p>Each recipient receives one email with its Case ID and confirmed document issues. Successful cases move to Waiting for response.</p><div className="follow-up-preview">{readyFollowUps.slice(0, 6).map(email => <div key={email.email_id}><strong>SC-{email.email_id}</strong><span>{email.from}</span></div>)}{readyFollowUps.length > 6 && <small>+ {readyFollowUps.length - 6} more cases</small>}</div>{followUpError && <p className="error-box">{followUpError}</p>}<div className="modal-actions"><button className="secondary" disabled={sending} onClick={() => setConfirming(false)}>Cancel</button><button className="primary" disabled={sending} onClick={sendAllFollowUps}><Icon name="mail" />{sending ? 'Sending...' : `Send ${readyFollowUps.length} emails`}</button></div></section></div>}</div>;
 }
 function BatchBanner({ batch }: { batch: BatchStatus | null }) {
@@ -203,6 +180,7 @@ export default function App() {
     [batch, setBatch] = useState<BatchStatus | null>(null),
     [mailbox, setMailbox] = useState<MailboxStatus | null>(null),
     [mailSyncing, setMailSyncing] = useState(false),
+    [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set()),
     [error, setError] = useState(''),
     [locked, setLocked] = useState(false),
     [token, setToken] = useState(''),
@@ -241,6 +219,7 @@ export default function App() {
     setError('');
     try {
       setBatch(await api.startBatch(force, emailIds));
+      if (emailIds?.length) setSelectedIds(new Set());
       window.setTimeout(poll, 300);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not start processing.');
@@ -276,7 +255,7 @@ export default function App() {
       return !value;
     });
   }
-  return <><aside className={`rail ${navOpen ? 'expanded' : ''}`} aria-label="Workspace navigation"><div className="rail-brand"><Link className="brand" to="/inbox" aria-label="ShipCheck home">SC</Link>{navOpen && <div><strong>ShipCheck</strong><small>Shipping document control</small></div>}</div><button className="rail-toggle" onClick={toggleNav} aria-label={navOpen ? 'Collapse sidebar' : 'Expand sidebar'}><Icon name={navOpen ? 'left' : 'right'} /></button><nav className="rail-links"><span className="rail-section-label">{navOpen ? 'WORKSPACE' : ''}</span><Link to="/inbox" className={`rail-button ${!reviewPage && !analyticsPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="inbox" /></span>{navOpen && <b>Inbox</b>}{navOpen && <em>{emails.length}</em>}</Link><Link to="/review" className={`rail-button ${reviewPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="review" /></span>{navOpen && <b>Action queue</b>}{navOpen && <em>{attentionCount}</em>}</Link><Link to="/analytics" className={`rail-button ${analyticsPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="document" /></span>{navOpen && <b>Analytics</b>}</Link></nav><div className="rail-bottom"><span className="workspace-avatar">OP</span>{navOpen && <span><strong>Operations</strong><small>Shipping team</small></span>}</div></aside><div className={`shell ${navOpen ? 'nav-open' : ''}`}><header className="topbar"><div className="wordmark">{analyticsPage ? 'Analytics' : reviewPage ? 'Action queue' : 'Shipping inbox'}</div><div className="topbar-actions"><button className="receive-button process-inbox" disabled={Boolean(batch?.running)} title={unprocessedCount ? 'Process emails without a saved report' : 'Run the current pipeline again for the whole inbox'} onClick={() => startBatch(unprocessedCount === 0)}><Icon name="refresh" />{batch?.running ? 'Processing inbox' : unprocessedCount ? `Process inbox (${unprocessedCount})` : 'Reprocess inbox'}</button>{mailbox?.configured ? <><button className="receive-button" disabled={mailSyncing || mailbox.syncing} onClick={syncMailbox}><Icon name="refresh" />{mailSyncing || mailbox?.syncing ? 'Syncing...' : 'Sync Gmail'}</button><span className={`environment ${mailbox?.connected ? 'mail-connected' : ''}`}><span className="dot" />{mailbox?.connected ? `Gmail / ${mailbox.mailbox}` : 'Gmail connecting'}</span></> : <span className="environment dataset"><span className="dot" />Gmail setup required</span>}<span className={`environment ai-state ${aiStatus?.enabled ? 'mail-connected' : ''}`} title={aiStatus?.disabled_reason || undefined}><span className="dot" />{aiLabel}</span></div></header><main>
+  return <><aside className={`rail ${navOpen ? 'expanded' : ''}`} aria-label="Workspace navigation"><div className="rail-brand"><Link className="brand" to="/inbox" aria-label="ShipCheck home">SC</Link>{navOpen && <div><strong>ShipCheck</strong><small>Shipping document control</small></div>}</div><button className="rail-toggle" onClick={toggleNav} aria-label={navOpen ? 'Collapse sidebar' : 'Expand sidebar'}><Icon name={navOpen ? 'left' : 'right'} /></button><nav className="rail-links"><span className="rail-section-label">{navOpen ? 'WORKSPACE' : ''}</span><Link to="/inbox" className={`rail-button ${!reviewPage && !analyticsPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="inbox" /></span>{navOpen && <b>Inbox</b>}{navOpen && <em>{emails.length}</em>}</Link><Link to="/review" className={`rail-button ${reviewPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="review" /></span>{navOpen && <b>Action queue</b>}{navOpen && <em>{attentionCount}</em>}</Link><Link to="/analytics" className={`rail-button ${analyticsPage ? 'active' : ''}`}><span className="rail-icon"><Icon name="document" /></span>{navOpen && <b>Analytics</b>}</Link></nav><div className="rail-bottom"><span className="workspace-avatar">OP</span>{navOpen && <span><strong>Operations</strong><small>Shipping team</small></span>}</div></aside><div className={`shell ${navOpen ? 'nav-open' : ''}`}><header className="topbar"><div className="wordmark">{analyticsPage ? 'Analytics' : reviewPage ? 'Action queue' : 'Shipping inbox'}</div><div className="topbar-actions"><button className="receive-button process-inbox" disabled={Boolean(batch?.running)} title={selectedIds.size ? 'Process the selected emails again' : unprocessedCount ? 'Process emails without a saved report' : 'Run the current pipeline again for the whole inbox'} onClick={() => startBatch(selectedIds.size ? true : unprocessedCount === 0, selectedIds.size ? [...selectedIds] : undefined)}><Icon name="refresh" />{batch?.running ? 'Processing inbox' : selectedIds.size ? `Process selected (${selectedIds.size})` : unprocessedCount ? `Process inbox (${unprocessedCount})` : 'Reprocess inbox'}</button>{mailbox?.configured ? <><button className="receive-button" disabled={mailSyncing || mailbox.syncing} onClick={syncMailbox}><Icon name="refresh" />{mailSyncing || mailbox?.syncing ? 'Syncing...' : 'Sync Gmail'}</button><span className={`environment ${mailbox?.connected ? 'mail-connected' : ''}`}><span className="dot" />{mailbox?.connected ? `Gmail / ${mailbox.mailbox}` : 'Gmail connecting'}</span></> : <span className="environment dataset"><span className="dot" />Gmail setup required</span>}<span className={`environment ai-state ${aiStatus?.enabled ? 'mail-connected' : ''}`} title={aiStatus?.disabled_reason || undefined}><span className="dot" />{aiLabel}</span></div></header><main>
     <section className="metrics"><div className="metric"><span className="metric-icon"><Icon name="mail" /></span><div><span>Total emails</span><strong>{emails.length}</strong></div></div><div className="metric"><span className="metric-icon completed"><Icon name="check" /></span><div><span>OK</span><strong>{okCount}</strong></div></div><div className="metric mismatch"><span className="metric-icon mismatch"><Icon name="warning" /></span><div><span>Mismatches detected</span><strong>{mismatchCount}</strong></div></div><div className="metric attention"><span className="metric-icon action"><Icon name="review" /></span><div><span>Needs human review</span><strong>{needsReviewCount}</strong></div></div></section>
     <BatchBanner batch={batch} />{error && <p role="alert" className="error-box page-error">{error}</p>}
     {locked ? <form className="access-card" onSubmit={async event => {
@@ -290,6 +269,6 @@ export default function App() {
           } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Access failed.');
           }
-        }}><label>Workspace access token<input type="password" required value={token} onChange={event => setToken(event.target.value)} /></label><button className="primary">Open workspace</button></form> : <Routes><Route path="/" element={<Navigate to="/inbox" replace />} /><Route path="/inbox" element={<Workspace emails={emails} refresh={refresh} processSelected={ids => startBatch(true, ids)} batchRunning={Boolean(batch?.running)} />} /><Route path="/emails/*" element={<Workspace emails={emails} refresh={refresh} processSelected={ids => startBatch(true, ids)} batchRunning={Boolean(batch?.running)} />} /><Route path="/review/*" element={<Workspace emails={emails} refresh={refresh} reviewOnly processSelected={ids => startBatch(true, ids)} batchRunning={Boolean(batch?.running)} />} /><Route path="/analytics" element={<AnalyticsView />} /><Route path="*" element={<div className="empty">Page not found. <Link to="/inbox">Return to inbox</Link></div>} /></Routes>}
+        }}><label>Workspace access token<input type="password" required value={token} onChange={event => setToken(event.target.value)} /></label><button className="primary">Open workspace</button></form> : <Routes><Route path="/" element={<Navigate to="/inbox" replace />} /><Route path="/inbox" element={<Workspace emails={emails} refresh={refresh} selectedIds={selectedIds} toggleSelected={emailId => setSelectedIds(currentSelection => { const next = new Set(currentSelection); next.has(emailId) ? next.delete(emailId) : next.add(emailId); return next; })} />} /><Route path="/emails/*" element={<Workspace emails={emails} refresh={refresh} selectedIds={selectedIds} toggleSelected={emailId => setSelectedIds(currentSelection => { const next = new Set(currentSelection); next.has(emailId) ? next.delete(emailId) : next.add(emailId); return next; })} />} /><Route path="/review/*" element={<Workspace emails={emails} refresh={refresh} reviewOnly selectedIds={selectedIds} toggleSelected={emailId => setSelectedIds(currentSelection => { const next = new Set(currentSelection); next.has(emailId) ? next.delete(emailId) : next.add(emailId); return next; })} />} /><Route path="/analytics" element={<AnalyticsView />} /><Route path="*" element={<div className="empty">Page not found. <Link to="/inbox">Return to inbox</Link></div>} /></Routes>}
   </main></div></>;
 }
