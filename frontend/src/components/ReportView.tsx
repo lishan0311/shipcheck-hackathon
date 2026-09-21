@@ -17,7 +17,7 @@ export const fieldNames: Record<FieldName,string> = {
 };
 export const statuses: Record<string,string> = {
   PROCESSING:'Processing', REVIEW_REQUIRED:'Review required',
-  FOLLOW_UP_REQUIRED:'Ready to contact', WAITING_FOR_RESPONSE:'Waiting for response',
+  FOLLOW_UP_REQUIRED:'Follow-up required', WAITING_FOR_RESPONSE:'Waiting for response',
   COMPLETED:'Completed', FAILED:'Failed',
 };
 export const reviewReasonLabels: Record<ReviewReason,string> = {
