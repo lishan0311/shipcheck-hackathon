@@ -8,8 +8,6 @@ ShipCheck classifies incoming operational email, identifies Bill of Lading (BL) 
 
 The application is an end-to-end prototype for the **Averis × Monash Hackathon 2026 Shipping Document Verification** use case. It combines a trained text classifier, deterministic business rules, optional Gemini assistance, human review, Gmail, and persistent cloud storage. The SI remains the reference document throughout the comparison.
 
-> **Evaluation note:** results reported below are reproducible on the supplied synthetic dataset and a separately generated seed-73 regression dataset. They are not claims of perfect accuracy on unrestricted production email.
-
 ## Contents
 
 - [Part 1 — Product, architecture and evidence](#part-1--product-architecture-and-evidence)
