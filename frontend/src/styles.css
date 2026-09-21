@@ -126,3 +126,6 @@ main{max-width:1760px;margin:auto;padding:14px 20px 22px}.metrics{display:grid;g
   .detail{max-height:none;overflow:visible}
   .inbox{align-self:start;position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:hidden}
 }
+
+/* Keep one clear selection indicator beside checkbox-enabled email rows. */
+.selectable-email-row .email-row.active{border-left-color:transparent}
