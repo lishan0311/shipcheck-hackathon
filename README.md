@@ -499,4 +499,10 @@ Full cloud instructions and pre-submission checks are in [`docs/DEPLOYMENT.md`](
 
 | Name | Role |
 |---|---|
-| [@lishan0311](https://github.com/lishan0311) | Repository maintainer |
+| Lee Seng Fong | Project Lead |
+| Yit Yu Qing | AI/ML Engineer |
+| Yap Li Shan | Backend & Cloud Engineer |
+| Chong Mynn | Frontend & UX Engineer |
+| Teo Vency | QA & Documentation Lead |
+
+
