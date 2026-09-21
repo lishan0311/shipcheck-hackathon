@@ -479,7 +479,10 @@ def create_app(settings=None, repository=None, classifier=None, mailbox_client=N
     @app.get('/api/analytics', dependencies=[Depends(authorize)])
     def analytics():
         """Aggregate saved reports for the operational analytics dashboard."""
-        latest = repo.latest_all(compact=True)
+        # The legacy Supabase summary view did not project `review_reason`.
+        # Analytics needs that source field to distinguish the four reliability
+        # queues, so use the newest complete report for this aggregate.
+        latest = repo.latest_all()
         with index_lock:
             ids = [item['email_id'] for item in email_index]
         reports = [latest[email_id]['result'] for email_id in ids if email_id in latest
