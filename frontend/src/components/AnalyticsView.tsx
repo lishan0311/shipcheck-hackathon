@@ -31,7 +31,7 @@ function ValidationCard({title,value}:{title:string;value:ValidationMetrics}) {
 
 function ReliabilityCard({items}:{items:{label:string;value:number;note?:string}[]}) {
   const total=items.reduce((sum,item)=>sum+item.value,0);
-  return <section className="analytics-card"><span className="section-kicker">RELIABILITY</span><h3>Human review reasons</h3>{total ? <BarList items={items} colors={['#c98212']}/> : <div className="reliability-empty"><strong>No reliability exceptions</strong><p>None of the current saved reports required review for wrong document type, missing attachment, unreadable input, or missing value.</p></div>}</section>;
+  return <section className="analytics-card"><span className="section-kicker">RELIABILITY</span><h3>Human review reasons</h3>{total ? <BarList items={items} colors={items.map(() => '#c98212')}/> : <div className="reliability-empty"><strong>No reliability exceptions</strong><p>None of the current saved reports required review for wrong document type, missing attachment, unreadable input, or missing value.</p></div>}</section>;
 }
 
 export default function AnalyticsView() {
